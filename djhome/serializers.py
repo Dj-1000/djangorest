@@ -9,5 +9,5 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Add custom claims
         token['username'] = user.username
         # ...
-
+        
         return token

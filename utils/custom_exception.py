@@ -1,6 +1,5 @@
 from rest_framework.exceptions import APIException
 
-class MethodNotAllowed(APIException):
-    def __init__(self, error, detail=''):
-        self.error = error
+class ValidationError(APIException):
+    def __init__(self, detail=''):
         self.detail = detail

@@ -10,7 +10,7 @@ from rest_framework import permissions, renderers
 from .permission import IsOwnerOrReadOnly
 from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
-
+from utils.custom_exception import ValidationError
 
 
 @api_view(['GET'])
@@ -22,9 +22,11 @@ def api_root(request, format=None):
     
     
 class SnippetList(APIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+    permission_classes = [IsOwnerOrReadOnly]
+    
     def get(self, request, format=None):
         snippets = Snippet.objects.all()
+        self.check_object_permissions(request, snippets)
         serializer = SnippetSerializer(snippets, many=True,context = {"request":request})
         return Response(serializer.data)
 
@@ -41,20 +43,22 @@ class SnippetDetail(APIView):
     """
     Retrieve, update or delete a snippet instance.
     """
-    permission_classes = [IsOwnerOrReadOnly]
+    permission_classes = (IsOwnerOrReadOnly,)
     def get_object(self, pk):
         try:
             return Snippet.objects.get(pk=pk)
         except Snippet.DoesNotExist:
-            raise Http404
+            raise  ValidationError("Object does not exist")
 
     def get(self, request, pk, format=None):
         snippet = self.get_object(pk)
+        self.check_object_permissions(request, snippet)
         serializer = SnippetSerializer(snippet,context={"request":request})
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         snippet = self.get_object(pk)
+        self.check_object_permissions(request, snippet)
         print("Update")
         serializer = SnippetSerializer(snippet, data=request.data)
         if serializer.is_valid():
@@ -64,12 +68,13 @@ class SnippetDetail(APIView):
 
     def delete(self, request, pk, format=None):
         snippet = self.get_object(pk)
+        self.check_object_permissions(request, snippet)
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     
 class SnippetCreate(generics.ListCreateAPIView):
-    permission_classes = [IsOwnerOrReadOnly]
+    permission_classes = (IsOwnerOrReadOnly,)
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
     
