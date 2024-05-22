@@ -13,16 +13,10 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         
         
 class SnippetSerializer(serializers.ModelSerializer):
-    highlight = serializers.HyperlinkedIdentityField(view_name='snippet-highlight', format='html')
     created_by = UserSerializer()
     class Meta:
         model = Snippet
-        fields = ['id','url','highlight','title', 'code', 'linenos', 'language', 'style','created_by']
-    
-    def create(self,validated_data):
-        user = self.context.get("user")
-        validated_data["created_by"] = user
-        return Snippet.objects.create(**validated_data)
+        fields = ['id','url','title', 'code', 'linenos', 'language', 'style','created_by']
     
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)

@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from .serializers import UserSerializer
 from rest_framework import permissions, renderers
 from .permission import IsOwnerOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.reverse import reverse
 from utils.custom_exception import ValidationError
@@ -22,7 +23,6 @@ def api_root(request, format=None):
     
     
 class SnippetList(APIView):
-    permission_classes = [IsOwnerOrReadOnly]
     
     def get(self, request, format=None):
         snippets = Snippet.objects.all()
@@ -31,12 +31,24 @@ class SnippetList(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        print("REQUEST-USER :",request.user)
-        serializer = SnippetSerializer(data=request.data,context={"user":request.user})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        payload = request.data
+        print("DATA : ",payload)
+        if payload['code'] is None:
+            raise ValidationError("code is required")
+        if payload["title"] is None:
+            raise ValidationError("title is required")
+        obj = Snippet.objects.create(
+            title = payload.get("title"),
+            code = payload["code"],
+            created_by = request.user
+        )
+        seri = SnippetSerializer(obj,context={"request":request})
+        return Response({
+            "status" : status.HTTP_201_CREATED,
+            "result_message": "Code object created successfully",
+            "result" : seri.data
+        })
+        
     
     
 class SnippetDetail(APIView):
